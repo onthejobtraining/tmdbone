@@ -1,18 +1,34 @@
-"""Custom exceptions for the tmdbone library for predictable error handling."""
+from typing import Any, Optional
 
 class TMDbException(Exception):
-    """Base exception for all errors raised by the tmdbone library."""
+    """Base exception for all tmdbone errors."""
     pass
 
 class TMDbAPIError(TMDbException):
     """
-    Raised when an API request fails after all retries due to a persistent
-    server-side or network issue.
+    Raised when the API returns an error status code.
     """
-    def __init__(self, message: str, status_code: int = None, url: str = None):
+    def __init__(self, message: str, status_code: Optional[int] = None, url: Optional[str] = None, response_body: Any = None):
         super().__init__(message)
         self.status_code = status_code
         self.url = url
+        self.response_body = response_body
     
     def __str__(self) -> str:
-        return f"{super().__str__()} (Status: {self.status_code}, URL: {self.url})"
+        base = super().__str__()
+        meta = []
+        if self.status_code:
+            meta.append(f"Status: {self.status_code}")
+        if self.url:
+            meta.append(f"URL: {self.url}")
+        
+        if self.response_body and isinstance(self.response_body, str):
+            if len(self.response_body) > 200:
+                preview = self.response_body[:200].replace('\n', ' ')
+                meta.append(f"Body: {preview}...")
+            else:
+                meta.append(f"Body: {self.response_body}")
+        
+        if meta:
+            return f"{base} ({', '.join(meta)})"
+        return base
